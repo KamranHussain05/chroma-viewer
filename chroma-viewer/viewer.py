@@ -13,9 +13,7 @@ pd.set_option('display.max_columns', 4)
 def view_collections(dir):
     st.markdown("### DB Path: %s" % dir)
     
-    client = chromadb.Client(Settings(chroma_db_impl="duckdb+parquet",
-                                        persist_directory=dir
-                                    ))
+    client = chromadb.PersistentClient(path=dir)
 
     # This might take a while in the first execution if Chroma wants to download
     # the embedding transformer
@@ -27,11 +25,18 @@ def view_collections(dir):
         data = collection.get()
 
         ids = data['ids']
-        embeddings = data["embeddings"]
         metadata = data["metadatas"]
         documents = data["documents"]
+        file_names = [data['metadatas'][i]['doc_file_name'] for i in range(len(data['metadatas']))]
 
-        df = pd.DataFrame.from_dict(data)
+        cleaned_data = {
+            'Chunk UUID': ids,
+            'Metadatas': metadata,
+            'Documents': documents,
+            'File Names': file_names
+        }
+
+        df = pd.DataFrame.from_dict(cleaned_data)
         st.markdown("### Collection: **%s**" % collection.name)
         st.dataframe(df)
 
